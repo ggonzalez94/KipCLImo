@@ -2,7 +2,7 @@
 
 ## Repository overview
 
-KipCLImo is a thin, agent-friendly CLI wrapping the Garmin Connect API. It is a pure data-access layer — 27 commands that return raw Garmin data in a stable JSON envelope. Coaching intelligence lives in the `garmin-coach` skill (`skills/garmin-coach/`), not in the CLI itself.
+KipCLImo is a thin, agent-friendly CLI wrapping the Garmin Connect API. It is a pure data-access layer — 27+ commands that return raw Garmin data in a stable JSON envelope, plus config commands for user profile management. Coaching intelligence lives in the `garmin-coach` skill (`skills/garmin-coach/`), not in the CLI itself. The skill supports multiple disciplines (running, cycling, gym) with guided onboarding and discipline-specific analysis references.
 
 ## Conventions
 
@@ -24,7 +24,7 @@ CLI (Typer) → AppState → GarminService → Cache (SQLite) / Auth (garth) / G
 - **`garmin_cli/output.py`** — Every command returns `{"status": "ok", "data": ..., "metadata": {...}}` or `{"status": "error", ...}`. Do not change this envelope shape.
 - **`garmin_cli/errors.py`** — Exit codes 0-5 are stable and consumed by agents. `map_exception()` translates SDK errors at the boundary.
 - **`garmin_cli/schema.py`** — `SchemaRegistry` provides runtime introspection via `garmin schema`. Every command must be registered here.
-- **`garmin_cli/commands/`** — One module per category. Each exports `register(app, registry)`. Commands use `get_state(ctx).service().<method>()` and `emit_result()`.
+- **`garmin_cli/commands/`** — One module per category. Each exports `register(app, registry)`. Commands use `get_state(ctx).service().<method>()` and `emit_result()`. Config commands (`config_cmds.py`) use a sub-typer pattern and read/write through `AppConfig` + `save_config()`/`load_config()`.
 
 ## Adding a new command
 
@@ -32,6 +32,16 @@ CLI (Typer) → AppState → GarminService → Cache (SQLite) / Auth (garth) / G
 2. Add the command to the appropriate module in `commands/`, calling `registry.register(CommandSpec(...))` and using `emit_result()`.
 3. Add the command to `skills/garmin-coach/references/cli.md` so agents discover it.
 4. Add a test in `tests/`.
+
+## Skill architecture
+
+The coaching skill uses a base + references pattern:
+- `SKILL.md` — shared logic: persona, onboarding, report templates, universal metrics (HRV, sleep, load)
+- `references/running.md`, `cycling.md`, `gym.md` — discipline-specific interpretation loaded based on user profile
+- `references/goals.md` — coaching emphasis per primary goal
+- `references/cli.md` — command inventory for agents
+
+When adding a new discipline, create a new reference file and add it to the loading instructions in SKILL.md.
 
 ## Key rules
 

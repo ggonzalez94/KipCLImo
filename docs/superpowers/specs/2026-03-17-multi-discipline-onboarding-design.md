@@ -27,12 +27,28 @@ Four new commands under `garmin config`, following existing CLI conventions (JSO
 ### Implementation
 
 - New file: `garmin_cli/commands/config_cmds.py`
-- Follows the `register(app, registry)` pattern
-- Registered as a sub-typer on the main app (like `cache`)
-- `config set` uses dot-notation to traverse nested keys (e.g., `profile.primary_goal`)
+- Follows the `register(app, registry)` pattern used by all command modules
+- Wiring in `cli.py`:
+  1. Create `config_app = typer.Typer(name="config", ...)`
+  2. Call `app.add_typer(config_app, name="config")`
+  3. Call `config_cmds.register(config_app, registry)` alongside the other `register()` calls
+- `config set` uses dot-notation to traverse nested keys (e.g., `profile.primary_goal`). Intermediate keys are created if they don't exist. Values are parsed via `json.loads()` with fallback to string — this ensures booleans (`true`/`false`), numbers, and `null` are stored as their JSON types, not as strings.
 - `config set-list` accepts variadic args and stores as a JSON array
-- `config reset-profile` is a convenience command that zeroes out the profile block
+- `config reset-profile` resets the `profile` field to its default value: `{"disciplines": [], "primary_goal": null, "onboarding_completed": false}`
 - All commands read/write through `AppConfig` in `config.py` — no direct file manipulation in command handlers
+
+### Schema Registry Entries
+
+All four config commands are registered with `CommandSpec`:
+- `category`: `"config"`
+- `auth_required`: `False`
+- `cache_strategy`: `"none"`
+
+### Required Changes to `config.py`
+
+- Add `profile` field to `AppConfig` dataclass: `profile: dict[str, Any] = field(default_factory=lambda: {"disciplines": [], "primary_goal": None, "onboarding_completed": False})`
+- Update `load_config()` to deserialize the `profile` key from JSON (with default if missing)
+- Update `save_config()` to serialize the `profile` field into the JSON payload — the current implementation manually enumerates fields and would silently drop `profile` without this change
 
 ### Config Schema
 
@@ -248,9 +264,14 @@ New content covering:
 ## 5. Build Sequence
 
 ### Phase 1: Config commands
-- Add `profile` support to `AppConfig` in `config.py`
+- Add `profile` field to `AppConfig` dataclass with default
+- Update `load_config()` to deserialize `profile` (default if missing)
+- Update `save_config()` to serialize `profile` into the JSON payload
 - Create `commands/config_cmds.py` with `show`, `set`, `set-list`, `reset-profile`
-- Register in schema, add tests
+- Wire `config_app` sub-typer in `cli.py` and call `config_cmds.register(config_app, registry)`
+- Register all four commands in schema registry
+- Update `references/cli.md` with new config commands
+- Add tests: set, set-list (with type coercion), show, reset-profile, dot-notation, missing profile default
 
 ### Phase 2: Skill restructure
 - Extract running-specific content from SKILL.md into `references/running.md`
@@ -258,9 +279,6 @@ New content covering:
 - Write `references/gym.md`
 - Write `references/goals.md`
 - Update SKILL.md: add onboarding section, make templates discipline-aware, add reference-loading instructions
-- Update `references/cli.md` with new config commands
 
-### Phase 3: Test
-- Test config commands (set, set-list, show, reset-profile, dot-notation)
-- Test that `AppConfig` handles missing profile gracefully
-- Manual test: run onboarding with an agent
+### Phase 3: Integration test
+- Manual test: run onboarding with an agent end-to-end

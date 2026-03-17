@@ -28,7 +28,7 @@ what's working or not.
 
 - `garmin-cli` is the data plane. Use it to fetch facts.
 - This skill is the interpretation layer. Turn data into coaching insight.
-- Do not invent metrics, fabricate baselines, or prescribe a full training plan.
+- Do not invent metrics, fabricate baselines, or prescribe a full training pla(unless the user asks for it).
 - If data is missing, say so plainly and continue with available signals.
 
 ## Onboarding
@@ -164,7 +164,7 @@ garmin stress <yesterday>
 garmin activities --start <yesterday> --end <today> --limit 5
 ```
 
-Format: 4–5 sentences, conversational, data-dense. Structure:
+Format: 4–5 sentences, conversational, data-dense, energizing. Structure:
 
 1. **Sleep headline** — score, duration, notable stages
 2. **Recovery signal** — HRV vs baseline, readiness score, what's dragging it down
@@ -261,21 +261,23 @@ Defer to the loaded discipline references for what metrics to spotlight and how 
 
 ## Race Readiness Check
 
-When user asks "Am I ready for [race]?", pull:
+When user asks "Am I ready for [event]?", pull:
 
 ```
 garmin race-predictions --latest
 garmin vo2max <today>           # plus 3 prior weeks for trend
 garmin training-status <today>
 garmin endurance-score <4_weeks_ago> <today>
-# Last 3-4 long runs:
-garmin activities --start <4_weeks_ago> --end <today> --type running --limit 10
-garmin activity <id>            # for each long run
-garmin activity-splits <id>    # for cardiac drift
+# Last 3-4 key sessions in the relevant discipline:
+garmin activities --start <4_weeks_ago> --end <today> --type <discipline> --limit 10
+garmin activity <id>            # for each key session
+garmin activity-splits <id>    # for pacing and drift analysis
 # 2-week recovery trends:
 garmin sleep <date>             # 14 days
 garmin hrv <date>               # 14 days
 ```
+
+Analyze the key sessions using the loaded discipline reference (e.g., cardiac drift and splits for runners, power and pacing for cyclists).
 
 Synthesize into: current fitness assessment, strengths, concerns,
 and a realistic prediction with confidence level.
@@ -290,16 +292,6 @@ When user asks "Compare this week to last week" or "How does this week compare?"
 2. Compute deltas: volume, intensity distribution, sleep quality, HRV, training load
 3. Present as side-by-side comparison with deltas
 4. Highlight the 3 most significant changes (good or bad)
-
----
-
-## Shoe Mileage Check
-
-When user asks "How are my shoes?" or "shoe mileage":
-
-1. Pull `garmin gear` → filter running shoes
-2. Surface total km per pair
-3. Flag shoes approaching replacement threshold (~600–800km)
 
 ---
 

@@ -4,6 +4,7 @@ Use `garmin-cli` as a thin data-access layer. Prefer narrow queries and field se
 
 ## High-value commands
 
+- `garmin schema`
 - `garmin sleep <date>`
 - `garmin heart-rate <date>`
 - `garmin hrv <date>`
@@ -30,6 +31,13 @@ Use `garmin-cli` as a thin data-access layer. Prefer narrow queries and field se
 - `garmin personal-records`
 - `garmin gear`
 - `garmin gear-stats <uuid>`
+
+## Config commands
+
+- `garmin config show` — display current config (including profile and disciplines)
+- `garmin config set <key> <value>` — set a config value (dot-notation, e.g., `profile.primary_goal`)
+- `garmin config set-list <key> <values...>` — set a list value (e.g., `profile.disciplines running cycling`)
+- `garmin config reset-profile` — reset profile to defaults and re-trigger onboarding
 
 ## Query discipline
 

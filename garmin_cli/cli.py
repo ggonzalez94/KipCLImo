@@ -16,7 +16,7 @@ from .output import emit_error, resolve_output_format
 from .schema import CommandSpec, ParameterSpec, SchemaRegistry
 from .state import AppState, GlobalOptions
 from .utils import parse_fields
-from .commands import activity, auth_cmds, body, gear, general, heart, recovery, sleep, training
+from .commands import activity, auth_cmds, body, config_cmds, gear, general, heart, recovery, sleep, training
 
 _LAST_OUTPUT_FORMAT: str | None = None
 _GLOBAL_FLAG_ARITY = {
@@ -54,6 +54,8 @@ def create_app() -> typer.Typer:
     )
     cache_app = typer.Typer(help="Inspect and manage the SQLite cache.")
     app.add_typer(cache_app, name="cache")
+    config_app = typer.Typer(help="View and update configuration.")
+    app.add_typer(config_app, name="config")
 
     @app.callback()
     def main(
@@ -144,6 +146,7 @@ def create_app() -> typer.Typer:
     body.register(app, registry)
     general.register(app, registry)
     gear.register(app, registry)
+    config_cmds.register(config_app, registry)
     return app
 
 

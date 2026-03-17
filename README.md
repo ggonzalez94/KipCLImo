@@ -1,6 +1,6 @@
 # KipCLImo
 
-**AI-powered training analytics for advanced amateur runners.**
+**AI-powered training analytics for runners, cyclists, and gym athletes.**
 
 KipCLImo is a thin, agent-friendly CLI that wraps the Garmin Connect API and pairs it with an AI coaching skill. Your Garmin watch collects the data — KipCLImo lets any AI agent read it, interpret it, and deliver actionable insight straight to you.
 
@@ -8,13 +8,14 @@ It answers one question: *"Is what I'm doing working — and what should I adjus
 
 ### What you get
 
+- **Guided onboarding** — the coach asks what disciplines you practice (running, cycling, gym) and what your primary goal is, then personalizes all future advice.
 - **Morning brief** — a 4-sentence daily snapshot of your sleep, recovery, training load, and readiness delivered to WhatsApp/Telegram at 7am.
-- **Weekly report** — an 8-section deep dive into volume, intensity distribution, key workouts, biomechanics trends, and race readiness every Monday.
-- **Interactive chat** — ask your agent anything: *"How's my running form lately?"*, *"Am I ready for my half marathon?"*, *"Compare this week to last week."*
+- **Weekly report** — an 8-section deep dive into volume, intensity distribution, key workouts, discipline-specific analysis, and race readiness every Monday.
+- **Interactive chat** — ask your agent anything: *"How's my running form lately?"*, *"Am I ready for my half marathon?"*, *"How's my FTP trending?"*, *"Compare this week to last week."*
 
 ### Who it's for
 
-You're an advanced amateur runner. You know what VO2max, ACWR, and cadence mean. You have a training plan — you don't need another one. You need someone to look at your data and tell you what matters.
+You're an advanced amateur athlete. You know what VO2max, ACWR, FTP, and cadence mean. You have a training plan — you don't need another one. You need someone to look at your data and tell you what matters.
 
 ---
 
@@ -53,7 +54,7 @@ That's it. Your agent now has a `garmin-coach` skill and a full CLI to fetch you
 
 ### 1. The CLI (`garmin`)
 
-A pure data-access layer — 27 commands that map 1:1 to the Garmin Connect API. No intelligence, no opinions, just data in a stable JSON envelope.
+A pure data-access layer — 27+ commands that map 1:1 to the Garmin Connect API, plus config commands for profile management. No intelligence, no opinions, just data in a stable JSON envelope.
 
 ```bash
 garmin sleep 2026-03-16
@@ -61,6 +62,8 @@ garmin training-readiness 2026-03-16
 garmin activities --start 2026-03-10 --end 2026-03-16 --type running
 garmin activity-splits 123456789
 garmin race-predictions --latest
+garmin config show
+garmin config set-list profile.disciplines running cycling
 ```
 
 **Key design choices:**
@@ -76,21 +79,23 @@ garmin race-predictions --latest
 
 ### 2. The Skill (`skills/garmin-coach/`)
 
-This is where the coaching intelligence lives. It's a portable, file-based skill that tells any LLM agent *how* to interpret your Garmin data.
+This is where the coaching intelligence lives. It's a portable, file-based skill that tells any LLM agent *how* to interpret your Garmin data. On first use, it runs a guided onboarding to learn your disciplines and goals.
 
 ```
 skills/garmin-coach/
-├── SKILL.md                  # Persona, operating rules, guardrails
+├── SKILL.md                  # Persona, onboarding, report templates, shared metrics
 └── references/
     ├── cli.md                # Command inventory for the agent
-    ├── metrics.md            # Coaching heuristics (HRV, load, sleep, biomechanics...)
-    ├── morning-brief.md      # Daily brief template
-    └── weekly-report.md      # 8-section weekly report template
+    ├── running.md            # Running: biomechanics, cardiac drift, intensity, splits
+    ├── cycling.md            # Cycling: power/FTP, cadence, HR decoupling, climbing
+    ├── gym.md                # Gym: volume, progressive overload, recovery impact
+    └── goals.md              # Goal catalog with coaching emphasis per goal
 ```
 
 The skill covers:
-- **Metrics interpretation** — what HRV trends mean, ACWR sweet spots, sleep score thresholds, cardiac drift calculation, 80/20 intensity checks, biomechanics flags.
-- **Report templates** — structured pull-lists and output formats for daily and weekly reports.
+- **Guided onboarding** — asks about disciplines (running, cycling, gym) and primary goal. Personalizes all future advice.
+- **Discipline-specific analysis** — the agent loads only the references matching your profile. A runner gets biomechanics and cardiac drift; a cyclist gets power and FTP analysis; a gym user gets volume and overload tracking.
+- **Report templates** — structured pull-lists and output formats for daily and weekly reports, adapted to your disciplines.
 - **Persona** — direct, data-informed coaching voice. Numbers over adjectives. Honest about bad signals.
 
 Install to any agent that uses directory-based skills:
@@ -124,6 +129,7 @@ Creates two cron jobs:
 | Category | Commands |
 |---|---|
 | Auth & System | `login`, `status`, `schema` |
+| Config | `config show`, `config set`, `config set-list`, `config reset-profile` |
 | Sleep | `sleep` |
 | Heart Rate & HRV | `heart-rate`, `hrv` |
 | Recovery | `stress`, `body-battery`, `respiration`, `spo2` |

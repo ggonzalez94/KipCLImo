@@ -28,6 +28,13 @@ class AppConfig:
     hr_zones: dict[str, Any] = field(
         default_factory=lambda: {"source": "garmin", "custom": None}
     )
+    profile: dict[str, Any] = field(
+        default_factory=lambda: {
+            "disciplines": [],
+            "primary_goal": None,
+            "onboarding_completed": False,
+        }
+    )
 
     @property
     def home_dir(self) -> Path:
@@ -74,6 +81,7 @@ def load_config() -> AppConfig:
         cache_dir=data.get("cache_dir", str(home_dir())),
         races=races,
         hr_zones=data.get("hr_zones", {"source": "garmin", "custom": None}),
+        profile=data.get("profile", {"disciplines": [], "primary_goal": None, "onboarding_completed": False}),
     )
 
 
@@ -89,6 +97,7 @@ def save_config(config: AppConfig) -> Path:
             for race in config.races
         ],
         "hr_zones": config.hr_zones,
+        "profile": config.profile,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     return path

@@ -1,117 +1,110 @@
-# garmin-cli
+# KipCLImo
 
-`garmin-cli` is an agent-friendly Garmin Connect CLI for training analytics. It wraps the public `garminconnect` Python package, adds a stable JSON envelope, applies field selection for token efficiency, and persists immutable history in SQLite so agents can build repeated daily and weekly analyses without re-fetching the same data.
+**AI-powered training analytics for advanced amateur runners.**
 
-## Features
+KipCLImo is a thin, agent-friendly CLI that wraps the Garmin Connect API and pairs it with an AI coaching skill. Your Garmin watch collects the data — KipCLImo lets any AI agent read it, interpret it, and deliver actionable insight straight to you.
 
-- JSON-first CLI with a stable success/error envelope
-- Auto-detected human output for terminal usage
-- SQLite cache with safe freshness rules:
-  - Past dates are served from cache when available
-  - Today is always fetched fresh
-  - `--no-cache` bypasses reads and writes
-  - `--refresh` forces a re-fetch and cache update
-- Runtime `schema` command for agent introspection
-- Portable file-based skill for OpenClaw and other agent systems
+It answers one question: *"Is what I'm doing working — and what should I adjust?"*
 
-## Installation
+### What you get
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+- **Morning brief** — a 4-sentence daily snapshot of your sleep, recovery, training load, and readiness delivered to WhatsApp/Telegram at 7am.
+- **Weekly report** — an 8-section deep dive into volume, intensity distribution, key workouts, biomechanics trends, and race readiness every Monday.
+- **Interactive chat** — ask your agent anything: *"How's my running form lately?"*, *"Am I ready for my half marathon?"*, *"Compare this week to last week."*
+
+### Who it's for
+
+You're an advanced amateur runner. You know what VO2max, ACWR, and cadence mean. You have a training plan — you don't need another one. You need someone to look at your data and tell you what matters.
+
+---
+
+## Quick Start — Tell Your Agent to Install It
+
+If you use [OpenClaw](https://openclaw.com), Claude Code, or any file-based agent, paste this:
+
+```
+Clone and install KipCLImo:
+
+git clone https://github.com/ggonzalez94/KipCLImo.git
+cd KipCLImo
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
-```
 
-## Authentication
+Then authenticate with Garmin:
 
-First login:
+garmin login --email <your-garmin-email>
 
-```bash
-garmin login --email you@example.com
-```
+Then install the coaching skill:
 
-Or use environment variables:
+python scripts/install_skill.py --agent openclaw
 
-```bash
-export GARMIN_EMAIL="you@example.com"
-export GARMIN_PASSWORD="super-secret"
-garmin login
-```
+Verify everything works:
 
-Token storage defaults to `~/.garmin-cli/tokens`. If you already have a valid `GARTH_HOME` token store from another Garmin tool, `garmin-cli` can reuse it automatically.
-
-## Core Usage
-
-```bash
 garmin status
 garmin schema
 garmin sleep 2026-03-16
-garmin activities --start 2026-03-10 --end 2026-03-16 --type running --limit 10
-garmin activity-details 123456789 --fields summaryDTO,detailedMetrics
+```
+
+That's it. Your agent now has a `garmin-coach` skill and a full CLI to fetch your data.
+
+---
+
+## Components
+
+### 1. The CLI (`garmin`)
+
+A pure data-access layer — 27 commands that map 1:1 to the Garmin Connect API. No intelligence, no opinions, just data in a stable JSON envelope.
+
+```bash
+garmin sleep 2026-03-16
+garmin training-readiness 2026-03-16
+garmin activities --start 2026-03-10 --end 2026-03-16 --type running
+garmin activity-splits 123456789
 garmin race-predictions --latest
 ```
 
-Machine-readable output is the default when stdout is not a TTY:
+**Key design choices:**
 
-```bash
-garmin user-summary 2026-03-16 | jq
+| Feature | How it works |
+|---|---|
+| Output | JSON by default when piped (agent mode). Human-readable when in a terminal. `--output json\|human` to force. |
+| Cache | SQLite at `~/.garmin-cli/cache.db`. Past dates are immutable and served from cache. Today always fetches fresh. `--no-cache` and `--refresh` for overrides. |
+| Field selection | `--fields cadence,averageHR` to trim payloads and save agent context window. |
+| Schema introspection | `garmin schema` returns every command, argument, type, and cache strategy as JSON. Agents can discover the API at runtime. |
+| Error envelope | Structured JSON errors with stable exit codes (0-5). Agents branch on exit code, not string parsing. |
+| Auth | OAuth tokens via [garth](https://github.com/matin/garth). File-based at `~/.garmin-cli/tokens/`. Auto-reuses existing garth/garminconnect token stores. |
+
+### 2. The Skill (`skills/garmin-coach/`)
+
+This is where the coaching intelligence lives. It's a portable, file-based skill that tells any LLM agent *how* to interpret your Garmin data.
+
+```
+skills/garmin-coach/
+├── SKILL.md                  # Persona, operating rules, guardrails
+└── references/
+    ├── cli.md                # Command inventory for the agent
+    ├── metrics.md            # Coaching heuristics (HRV, load, sleep, biomechanics...)
+    ├── morning-brief.md      # Daily brief template
+    └── weekly-report.md      # 8-section weekly report template
 ```
 
-Force a format explicitly:
+The skill covers:
+- **Metrics interpretation** — what HRV trends mean, ACWR sweet spots, sleep score thresholds, cardiac drift calculation, 80/20 intensity checks, biomechanics flags.
+- **Report templates** — structured pull-lists and output formats for daily and weekly reports.
+- **Persona** — direct, data-informed coaching voice. Numbers over adjectives. Honest about bad signals.
+
+Install to any agent that uses directory-based skills:
 
 ```bash
-garmin --output json sleep 2026-03-16
-garmin --output human activities --limit 5
-```
-
-## Cache Commands
-
-```bash
-garmin cache stats
-garmin cache clear
-garmin cache clear --before 2026-01-01
-garmin cache clear --metric hrv
-```
-
-## Skill Installation
-
-The source of truth for the agent skill lives in [`skills/garmin-coach`](skills/garmin-coach).
-
-Install it into OpenClaw:
-
-```bash
-python scripts/install_skill.py --agent openclaw
-```
-
-Install it into Codex:
-
-```bash
+python scripts/install_skill.py --agent openclaw   # symlink (default)
 python scripts/install_skill.py --agent codex
+python scripts/install_skill.py --agent claude
+python scripts/install_skill.py --agent custom --dest /path/to/skills
 ```
 
-Install it into any other file-based skill directory:
+### 3. Scheduled Reports (OpenClaw cron)
 
-```bash
-python scripts/install_skill.py --agent custom --dest /path/to/agent/skills
-```
-
-Copy instead of symlink:
-
-```bash
-python scripts/install_skill.py --agent openclaw --method copy
-```
-
-Override the target path:
-
-```bash
-python scripts/install_skill.py --agent openclaw --dest /custom/skills/root
-```
-
-The skill itself is plain file-based `SKILL.md` content, so it remains compatible with agent systems that use directory-based skills.
-
-## OpenClaw Cron Setup
-
-Set the delivery target and create the daily and weekly automations:
+Automate delivery with the setup script:
 
 ```bash
 GARMIN_OPENCLAW_CHANNEL=whatsapp \
@@ -120,23 +113,80 @@ GARMIN_TIMEZONE=America/New_York \
 scripts/setup-cron.sh
 ```
 
-The helper creates:
+Creates two cron jobs:
+- **7:00 AM daily** — morning brief
+- **8:00 AM Monday** — weekly report
 
-- A 7:00 AM morning brief
-- An 8:00 AM Monday weekly report
+---
 
-Both prompts instruct the agent to deliver the final report in Spanish.
+## Full Command Reference
+
+| Category | Commands |
+|---|---|
+| Auth & System | `login`, `status`, `schema` |
+| Sleep | `sleep` |
+| Heart Rate & HRV | `heart-rate`, `hrv` |
+| Recovery | `stress`, `body-battery`, `respiration`, `spo2` |
+| Activity | `activities`, `activity`, `activity-details`, `activity-splits`, `activity-hr-zones`, `activity-weather` |
+| Training | `training-readiness`, `training-status`, `vo2max`, `race-predictions`, `endurance-score`, `fitness-age` |
+| Body Composition | `body-composition`, `weigh-ins` |
+| General | `user-summary`, `steps`, `personal-records` |
+| Gear | `gear`, `gear-stats` |
+| Cache | `cache stats`, `cache clear` |
+
+Run `garmin schema` for the machine-readable version with full argument specs.
+
+---
 
 ## Development
 
-Install dev dependencies:
-
 ```bash
+# Setup
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-```
 
-Run tests:
-
-```bash
+# Run tests
 pytest
+
+# Run with coverage
+pytest --cov=garmin_cli
 ```
+
+### Project structure
+
+```
+garmin_cli/
+├── cli.py              # Typer app, global flags, entry point
+├── client.py           # GarminService — all API calls + cache logic
+├── cache.py            # SQLite cache (4 tables)
+├── auth.py             # OAuth token management (garth)
+├── output.py           # JSON envelope + Rich human formatter
+├── schema.py           # Self-describing command registry
+├── config.py           # Config file (~/.garmin-cli/config.json)
+├── errors.py           # Exit codes, error taxonomy, exception mapping
+├── state.py            # Per-invocation dependency container
+├── utils.py            # Date helpers, JSON serialization, field selection
+├── skill_install.py    # Multi-agent skill installer
+└── commands/           # One module per command category
+```
+
+### Architecture
+
+```
+Agent / Terminal ──subprocess──▸ garmin-cli (Typer)
+                                    │
+                         ┌──────────┼──────────┐
+                         ▼          ▼          ▼
+                     AuthManager  Cache    GarminService
+                     (garth)    (SQLite)   (garminconnect)
+                                    │
+                                    ▼
+                              Garmin Connect API
+```
+
+The CLI is deliberately thin — a 1:1 data access layer. All coaching intelligence lives in the `garmin-coach` skill, not in the CLI. This keeps the tool agent-agnostic: it works with OpenClaw, Claude Code, Codex, or any LLM that can call subprocesses.
+
+### Built on
+
+- [cyberjunky/python-garminconnect](https://github.com/cyberjunky/python-garminconnect) — Python wrapper for the Garmin Connect API
+- [matin/garth](https://github.com/matin/garth) — OAuth token management for Garmin SSO

@@ -2,6 +2,8 @@
 
 Coaching heuristics for strength and gym training. Loaded when the user's profile includes `gym`.
 
+IMPORTANT: If gym data is not properly tracked(e.g. sessions are recorded, but not specific reps and workouts) don't pay as much attention to this, and just focus on the number and duration of the sessions.
+
 ## Volume Tracking
 
 - Track sets × reps × load per muscle group per week. Total weekly volume is the primary driver of adaptation.

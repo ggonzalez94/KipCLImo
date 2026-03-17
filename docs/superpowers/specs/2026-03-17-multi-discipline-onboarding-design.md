@@ -89,7 +89,7 @@ When the agent reads `garmin config show` and sees `profile` is missing or `onbo
 
 1. **Introduce** — the agent introduces itself as a training coach and explains it needs a few things to personalize the experience.
 2. **Disciplines** — ask which disciplines the user practices. Options: running, cycling, gym. User can pick multiple.
-3. **Primary goal** — based on selected disciplines, present relevant goal suggestions. User picks one OR writes their own.
+3. **Primary goal** — based on selected disciplines, present relevant goal suggestions. User picks one OR writes their own. If the goal is an event, the coach should ask when that event is happening. This is important to help the user prepare for the event.
 4. **Persist** — agent calls:
    - `garmin config set-list profile.disciplines running cycling`
    - `garmin config set profile.primary_goal "Correr un medio maratón"`

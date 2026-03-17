@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "garmin-cli"
+version = "0.1.0"
+description = "Agent-friendly Garmin Connect CLI for training analytics."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Gustavo" }]
+dependencies = [
+  "garminconnect>=0.2.40,<0.3",
+  "rich>=14.0",
+  "typer>=0.15,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "freezegun>=1.5",
+  "pytest>=9.0",
+  "pytest-cov>=7.0",
+  "pytest-mock>=3.14",
+]
+
+[project.scripts]
+garmin = "garmin_cli.cli:run"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["garmin_cli*"]

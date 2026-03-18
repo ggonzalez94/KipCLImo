@@ -13,7 +13,7 @@ fi
 
 openclaw cron add \
   --name "Garmin Morning Brief" \
-  --cron "0 7 * * *" \
+  --cron "0 10 * * *" \
   --tz "${TIMEZONE}" \
   --session isolated \
   --message "Use the garmin-coach skill. Generate my morning training brief from Garmin data. Pull today's sleep, HRV, training readiness, training status, body battery, stress, and yesterday's activities. Follow the morning brief template. Deliver the final brief in Spanish." \
@@ -23,7 +23,7 @@ openclaw cron add \
 
 openclaw cron add \
   --name "Garmin Weekly Report" \
-  --cron "0 8 * * 1" \
+  --cron "0 10 * * 1" \
   --tz "${TIMEZONE}" \
   --session isolated \
   --model opus \
